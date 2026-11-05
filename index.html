@@ -7,7 +7,7 @@ body.big{font-size:18px}
 :focus-visible{outline:3px solid #ffd54f;outline-offset:2px}
 .bar{position:sticky;top:0;z-index:20;margin:0 -12px;padding:calc(8px + env(safe-area-inset-top)) 12px 8px;background:rgba(11,14,19,.9);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--b)}
 .brand{display:flex;align-items:center;gap:10px;min-height:40px}.brand b{font-size:1.2em;flex:1;letter-spacing:.2px}
-button{font:inherit;font-weight:600;background:var(--ac);color:#fff;border:1px solid var(--ac);border-radius:12px;padding:8px 14px;min-height:44px;cursor:pointer;touch-action:manipulation}
+button{font:inherit;font-weight:600;background:var(--ac);color:#fff;border:1px solid var(--ac);border-radius:12px;padding:8px 12px;min-height:44px;cursor:pointer;touch-action:manipulation}
 button:active{transform:scale(.97)}button:disabled{opacity:.6}
 button.s{background:var(--p2);border-color:#3a4558;color:var(--t)}
 button.s.on,#tabs button.on,.chips button.on{background:var(--ac);border-color:#fff6;color:#fff}
@@ -28,16 +28,19 @@ input[type=checkbox]{width:28px;height:28px;min-height:0;accent-color:var(--ac)}
 .h>span:nth-child(2){padding:3px 11px;border-radius:99px;font-weight:700;font-size:.8em;background:color-mix(in srgb,currentColor 16%,transparent)}
 .h>span:last-child{margin-left:auto;font-size:1.25em;font-weight:600;font-variant-numeric:tabular-nums}
 .sub{color:var(--m);font-size:.86em;margin:3px 0 6px}.g{color:var(--g)}.r{color:var(--r)}
-.tb{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0;margin:6px 0;align-items:center}.tb::-webkit-scrollbar{display:none}
-.tb button{flex:1 1 auto;min-width:50px;padding:8px 8px;white-space:nowrap}.tb input[type=range]{flex:2 1 120px;min-width:100px;padding:0;accent-color:var(--ac);min-height:44px}
+.tb{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0;margin:6px 0;align-items:center}.tb::-webkit-scrollbar{display:none}
+.tb button{flex:1 1 auto;min-width:44px;padding:8px 10px;white-space:nowrap}
+.tb input[type=range]{flex:2 1 100px;min-width:80px;padding:0;accent-color:var(--ac);min-height:44px}
 .chips{display:flex;gap:10px;margin:12px 0 4px}.chips button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px;min-height:58px;background:var(--p);border-color:#3a4558;color:var(--t)}
 .chips b{font-size:1.15em}.chips span{font-size:.78em;opacity:.85;font-weight:500}
-canvas{width:100%;display:block;touch-action:none;background:#0b0e13;border:1px solid var(--b);border-radius:14px;margin-bottom:12px}
+canvas{width:100%;display:block;touch-action:pan-y;background:#0b0e13;border:1px solid var(--b);border-radius:14px;margin-bottom:12px}
+canvas.drawing-active{touch-action:none;border-color:var(--ac)}
 #cv{height:clamp(280px,46vh,460px);height:clamp(280px,46svh,460px)}#ov{height:clamp(190px,28vh,280px);height:clamp(190px,28svh,280px)}
 .rd{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 table{border-collapse:collapse;width:100%;font-size:.92em}th,td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--b);white-space:nowrap}th:first-child,td:first-child{text-align:left}th{color:var(--m);font-weight:500}caption{text-align:left}.tw{overflow-x:auto}
 details{margin-top:18px;background:var(--p);border:1px solid var(--b);border-radius:14px;padding:6px 12px 10px;color:var(--m)}summary{min-height:40px;display:flex;align-items:center;cursor:pointer;color:var(--t);font-weight:600}
 small{color:var(--m);display:block;margin-top:16px;font-size:.78em;line-height:1.5}
+.badge-hint{display:inline-block;background:#1b2535;border:1px solid #32435e;color:#79c0ff;padding:4px 8px;border-radius:8px;font-size:0.85em;margin-bottom:6px}
 @media (orientation:landscape) and (max-height:520px){#cv{height:72vh;height:72svh}#ov{height:60vh;height:60svh}}
 @media (min-width:700px){#cfg{border-radius:22px;bottom:16px;max-width:560px}}
 @media (prefers-reduced-motion:reduce){button:active{transform:none}}
@@ -129,9 +132,30 @@ function tabs(){$('tabs').innerHTML=P.map((p,i)=>`<button role="tab" aria-select
 const pick=i=>{A=(i+P.length)%P.length;V=newV();pend=null;tabs();card();const b=$('tabs').querySelector('.on');if(b)b.focus()};
 $('tabs').onclick=e=>{const b=e.target.closest('button');if(b)pick(+b.dataset.i)};
 $('tabs').onkeydown=e=>{if(e.key==='ArrowRight')pick(A+1);else if(e.key==='ArrowLeft')pick(A-1)};
-const HINT={pan:'Pan tool: drag to pan, tap a bar to inspect, double-tap to fit.',h:'Line tool: tap chart to place a horizontal price line.',t:'Trend tool: tap 2 points to draw an extended trend line.',e:'Erase tool: tap near a drawing to remove it.'};
+
+const HINT={
+ pan:'Touch mode: drag to pan chart, double-tap to reset view.',
+ h:'Touch mode: tap anywhere on chart to drop a price line.',
+ t:'Touch mode: tap start point, then tap end point for trend ray.',
+ e:'Touch mode: tap directly near any line to delete it.'
+};
 const hint=t=>{const h=$('hint');if(h)h.textContent=t};
-function setTool(t){V.tool=t;pend=null;document.querySelectorAll('[data-t]').forEach(b=>{const on=b.dataset.t===t;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});hint(HINT[t])}
+function setTool(t){
+ V.tool=t;pend=null;
+ document.querySelectorAll('[data-t]').forEach(b=>{const on=b.dataset.t===t;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
+ document.querySelectorAll('canvas').forEach(cv=>cv.classList.toggle('drawing-active',t!=='pan'));
+ hint(HINT[t]);draw();
+}
+
+function addQuickHLine(kind){
+ const p=P[A];if(!p)return;const B=V.tf===5?p.b5:p.b2,dk=p.s+'|s',L=DR[dk]=DR[dk]||[];
+ let price=p.px;
+ if(kind==='high')price=Math.max(...B.h.slice(-V.n));
+ else if(kind==='low')price=Math.min(...B.l.slice(-V.n));
+ else if(kind==='vwap')price=B.vw[B.vw.length-1];
+ L.push({k:'h',p:price});V.lk=dk;store();draw();
+}
+
 function card(){
  const p=P[A];if(!p){$('card').innerHTML=EMPTY;return}const up=p.d>0;
  $('card').innerHTML=`<div class="h"><b>${p.s}</b><span class="${up?'g':'r'}">${up?'▲ CALLS (bullish)':'▼ PUTS (bearish)'}</span><span>${p.px.toFixed(2)} <span class="${p.chg>=0?'g':'r'}">${p.chg==null?'':(p.chg>=0?'+':'')+p.chg.toFixed(2)+'%'}</span></span></div>
@@ -139,20 +163,29 @@ function card(){
  <div class="tb" role="toolbar" aria-label="Main controls">
    <button class="s on" data-tf="5">5m</button><button class="s" data-tf="2">2m</button>
    <button class="s" id="xo" aria-pressed="true">Crossover</button>
-   <button class="s" id="tg" aria-expanded="${TL}">Tools ${TL?'▲':'▼'}</button>
+   <button class="s" id="tg" aria-expanded="${TL}">Draw / Tools ${TL?'▲':'▼'}</button>
  </div>
  <div id="tl" ${TL?'':'hidden'}>
    <div class="tb" role="toolbar" aria-label="Drawing tools">
-     <button class="s" data-t="pan">Pan</button><button class="s" data-t="h">H-line</button>
-     <button class="s" data-t="t">Trend</button><button class="s" data-t="e">Erase</button>
-     <button class="s" id="un">Undo</button><button class="s" id="cl">Clear</button>
+     <button class="s" data-t="pan">Pan</button>
+     <button class="s" data-t="h">+ Line</button>
+     <button class="s" data-t="t">+ Trend</button>
+     <button class="s" data-t="e">Erase</button>
+     <button class="s" id="un">Undo</button>
+     <button class="s" id="cl">Clear</button>
+   </div>
+   <div class="tb" role="toolbar" aria-label="Quick lines">
+     <button class="s" id="qk-px">+ Last $</button>
+     <button class="s" id="qk-hi">+ High</button>
+     <button class="s" id="qk-lo">+ Low</button>
+     <button class="s" id="qk-vw">+ VWAP</button>
    </div>
    <div class="tb" role="group" aria-label="Zoom controls">
      <button class="s" id="zo" aria-label="Zoom out">−</button>
      <input id="zs" type="range" min="25" max="300" aria-label="Zoom level">
      <button class="s" id="zi" aria-label="Zoom in">+</button><button class="s" id="fit">Fit</button>
    </div>
-   <div class="sub" id="hint" role="status" aria-live="polite"></div>
+   <div class="badge-hint" id="hint" role="status" aria-live="polite"></div>
  </div>
  <canvas id="cv" tabindex="0" role="img"></canvas><div class="rd" id="cvx"></div>
  <div class="chips" role="group" aria-label="Option contracts">`+p.sel.map((r,j)=>`<button class="s" data-j="${j}" aria-pressed="${j===0}"><b>${r.k}${up?'C':'P'}</b><span>ask ${r.ap.toFixed(2)} · ${r.sp.toFixed(0)}% spr</span></button>`).join('')+`</div>
@@ -165,9 +198,13 @@ function card(){
  $('tg').onclick=()=>{TL=!TL;showTl()};
  $('un').onclick=()=>{const L=DR[V.lk];if(L&&L.length){L.pop();store();draw()}};
  $('cl').onclick=()=>{const r=p.sel[V.sel];delete DR[p.s+'|s'];if(r)delete DR[r.sym+'|o'];pend=null;store();draw()};
+ $('qk-px').onclick=()=>addQuickHLine('px');
+ $('qk-hi').onclick=()=>addQuickHLine('high');
+ $('qk-lo').onclick=()=>addQuickHLine('low');
+ $('qk-vw').onclick=()=>addQuickHLine('vwap');
  $('zi').onclick=()=>zoom(.75);$('zo').onclick=()=>zoom(1.33);$('fit').onclick=fit;$('zs').oninput=()=>{V.n=325-(+$('zs').value);draw()};
  ['cv','ov'].forEach(id=>wire($(id)));setTool(V.tool);sync();draw();loadOpt()}
-function showTl(){const t=$('tl'),g=$('tg');if(!t)return;t.hidden=!TL;g.classList.toggle('on',TL);g.textContent=`Tools ${TL?'▲':'▼'}`;g.setAttribute('aria-expanded',String(TL));if(!TL&&V.tool!=='pan')setTool('pan')}
+function showTl(){const t=$('tl'),g=$('tg');if(!t)return;t.hidden=!TL;g.classList.toggle('on',TL);g.textContent=`Draw / Tools ${TL?'▲':'▼'}`;g.setAttribute('aria-expanded',String(TL));if(!TL&&V.tool!=='pan')setTool('pan')}
 function sync(){document.querySelectorAll('[data-tf]').forEach(b=>{const on=+b.dataset.tf===V.tf;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
  document.querySelectorAll('[data-j]').forEach(b=>{const on=+b.dataset.j===V.sel;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
  const x=$('xo');if(x){x.classList.toggle('on',V.cross);x.setAttribute('aria-pressed',String(V.cross))}}
@@ -176,26 +213,79 @@ const maxOff=()=>{const p=P[A];return Math.max(0,(V.tf===5?p.b5:p.b2).c.length-2
 const zoom=f=>{V.n=Math.max(25,Math.min(300,Math.round(V.n*f)));draw()};
 const fit=()=>{V.n=80;V.off=0;$('cv')._hi=$('ov')._hi=null;draw()};
 const pan=d=>{V.off=Math.max(0,Math.min(maxOff(),V.off+d));draw()};
-function wire(cv){const ptrs=wire.p||(wire.p=new Map());let gs=null,pd0=1,n0=80;
- cv.onpointerdown=e=>{ptrs.set(e.pointerId,e.clientX);cv.setPointerCapture(e.pointerId);if(ptrs.size===1)gs={x:e.clientX,o:V.off,mv:false};else{const a=[...ptrs.values()];pd0=Math.abs(a[0]-a[1])||1;n0=V.n;gs=null}};
- cv.onpointermove=e=>{
-  if(!ptrs.has(e.pointerId)){if(e.pointerType==='mouse'&&cv._m){const r=cv.getBoundingClientRect();cv._hi=Math.max(0,Math.min(cv._m.N-1,Math.round(cv._m.s+(e.clientX-r.left)/cv._m.bw-.5)));draw()}return}
+
+function wire(cv){
+ const ptrs=wire.p||(wire.p=new Map());let gs=null,pd0=1,n0=80;
+ cv.onpointerdown=e=>{
   ptrs.set(e.pointerId,e.clientX);
-  if(ptrs.size>=2){const a=[...ptrs.values()];V.n=Math.round(Math.max(25,Math.min(300,n0*pd0/(Math.abs(a[0]-a[1])||1))));draw()}
-  else if(gs){const dx=e.clientX-gs.x;if(Math.abs(dx)>8)gs.mv=true;if(gs.mv){const bw=(cv.clientWidth-52)/V.n;V.off=Math.max(0,Math.min(maxOff(),Math.round(gs.o+dx/bw)));draw()}}};
- cv.onpointerup=e=>{const tap=gs&&!gs.mv&&ptrs.size===1;ptrs.delete(e.pointerId);if(tap)tapAt(cv,e);gs=null};
- cv.onpointercancel=e=>{ptrs.delete(e.pointerId);gs=null};
+  cv.setPointerCapture(e.pointerId);
+  if(ptrs.size===1){
+    gs={x:e.clientX,y:e.clientY,o:V.off,moved:false};
+  }else{
+    const a=[...ptrs.values()];pd0=Math.abs(a[0]-a[1])||1;n0=V.n;gs=null;
+  }
+ };
+ cv.onpointermove=e=>{
+  if(!ptrs.has(e.pointerId)){
+    if(e.pointerType==='mouse'&&cv._m){
+      const r=cv.getBoundingClientRect();cv._hi=Math.max(0,Math.min(cv._m.N-1,Math.round(cv._m.s+(e.clientX-r.left)/cv._m.bw-.5)));draw();
+    }
+    return;
+  }
+  ptrs.set(e.pointerId,e.clientX);
+  if(ptrs.size>=2){
+    const a=[...ptrs.values()];V.n=Math.round(Math.max(25,Math.min(300,n0*pd0/(Math.abs(a[0]-a[1])||1))));draw();
+  }else if(gs){
+    const dx=e.clientX-gs.x,dy=e.clientY-gs.y;
+    if(Math.hypot(dx,dy)>14)gs.moved=true;
+    if(gs.moved&&V.tool==='pan'){
+      const bw=(cv.clientWidth-52)/V.n;
+      V.off=Math.max(0,Math.min(maxOff(),Math.round(gs.o+dx/bw)));draw();
+    }
+  }
+ };
+ cv.onpointerup=e=>{
+  const isTap=gs&&(!gs.moved||V.tool!=='pan');
+  ptrs.delete(e.pointerId);
+  if(isTap)tapAt(cv,e);
+  gs=null;
+ };
+ cv.onpointercancel=e=>{ptrs.delete(e.pointerId);gs=null;};
  cv.onwheel=e=>{e.preventDefault();zoom(e.deltaY>0?1.15:.87)};
- cv.onkeydown=e=>{const k=e.key;if(k==='ArrowLeft')pan(e.shiftKey?20:5);else if(k==='ArrowRight')pan(e.shiftKey?-20:-5);else if(k==='+'||k==='=')zoom(.8);else if(k==='-')zoom(1.25);else if(k==='0')fit();else if(k==='Home')pan(9999);else if(k==='End')pan(-9999);else return;e.preventDefault()}}
+ cv.onkeydown=e=>{const k=e.key;if(k==='ArrowLeft')pan(e.shiftKey?20:5);else if(k==='ArrowRight')pan(e.shiftKey?-20:-5);else if(k==='+'||k==='=')zoom(.8);else if(k==='-')zoom(1.25);else if(k==='0')fit();else return;e.preventDefault()};
+}
+
 function gi(S,t){const tm=S.tm||(S.tm=S.t.map(Date.parse)),q=Date.parse(t);let a=0,b=tm.length-1;if(q>=tm[b])return b;if(q<=tm[0])return 0;while(b-a>1){const m=(a+b)>>1;tm[m]<=q?a=m:b=m}return a}
 function dist(cv,dd,px,py){const m=cv._m,S=cv._S;if(dd.k==='h')return Math.abs(m.y(dd.p)-py);const x1=m.x(gi(S,dd.a.t)),y1=m.y(dd.a.p),x2=m.x(gi(S,dd.b.t)),y2=m.y(dd.b.p),dx=x2-x1,dy=y2-y1,L=dx*dx+dy*dy||1;let u=Math.max(0,((px-x1)*dx+(py-y1)*dy)/L);return Math.hypot(px-(x1+u*dx),py-(y1+u*dy))}
-function tapAt(cv,e){const m=cv._m,S=cv._S;if(!m)return;const r=cv.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top;if(px>m.pw)return;
+
+function tapAt(cv,e){
+ const m=cv._m,S=cv._S;if(!m)return;const r=cv.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top;if(px>m.pw)return;
  const idx=Math.max(0,Math.min(m.N-1,Math.round(m.s+px/m.bw-.5))),price=m.lo+(1-(py-3)/m.ph)*(m.hi-m.lo),dk=cv._dk,L=DR[dk]=DR[dk]||[];
- if(V.tool==='pan'){if(Date.now()-lt<300){lt=0;fit();return}lt=Date.now();cv._hi=idx;draw();return}
- if(V.tool==='h'){L.push({k:'h',p:price});V.lk=dk}
- else if(V.tool==='t'){if(pend&&pend.cv===cv){L.push({k:'t',a:pend.a,b:{t:S.t[idx],p:price}});pend=null;V.lk=dk;hint(HINT.t)}else{pend={cv,a:{t:S.t[idx],p:price}};hint('First point set. Tap the second point.')}}
- else if(V.tool==='e'){let bi=-1,bd=20;L.forEach((dd,i)=>{const q=dist(cv,dd,px,py);if(q<bd){bd=q;bi=i}});if(bi>=0)L.splice(bi,1);else hint('Nothing close enough to erase. Tap nearer to a drawing.')}
- store();draw()}
+ 
+ if(V.tool==='pan'){
+   if(Date.now()-lt<350){lt=0;fit();return}
+   lt=Date.now();cv._hi=idx;draw();return;
+ }
+ if(V.tool==='h'){
+   L.push({k:'h',p:price});V.lk=dk;
+   hint(`Added line at ${price.toFixed(2)}`);
+ }else if(V.tool==='t'){
+   if(pend&&pend.cv===cv){
+     L.push({k:'t',a:pend.a,b:{t:S.t[idx],p:price}});pend=null;V.lk=dk;
+     hint('Trend line added.');
+   }else{
+     pend={cv,a:{t:S.t[idx],p:price}};
+     hint(`Point 1 set at ${price.toFixed(2)}. Tap point 2.`);
+   }
+ }else if(V.tool==='e'){
+   let bi=-1,bd=45; // Increased hit target for touch screens
+   L.forEach((dd,i)=>{const q=dist(cv,dd,px,py);if(q<bd){bd=q;bi=i}});
+   if(bi>=0){L.splice(bi,1);hint('Drawing deleted.');}
+   else hint('No drawing near finger tap. Try tapping directly on the line.');
+ }
+ store();draw();
+}
+
 async function loadOpt(){
  const p=P[A];if(!p)return;const r=p.sel[V.sel];if(!r||p.ob[r.sym+V.tf]!==undefined)return;
  try{const bars=await obars([r.sym],V.tf);p.ob[r.sym+V.tf]=bars[r.sym]||[]}catch(e){p.ob[r.sym+V.tf]=null;p.oerr=e.message}
@@ -203,6 +293,7 @@ async function loadOpt(){
 const tcol=(S,i)=>S.cF[i]>S.cS[i]&&S.c[i]>S.cS[i]?0:S.cF[i]<S.cS[i]&&S.c[i]<S.cS[i]?1:2;
 const tname=(S,i)=>['UP','DOWN','MIXED'][tcol(S,i)];
 function lastX(S){for(let i=S.c.length-1;i>0;i--){const a=S.cF[i-1]-S.cS[i-1],b=S.cF[i]-S.cS[i],n=S.c.length-1-i,w=`${n} bars ago (${S.ts[i].slice(6)})`;if(a<=0&&b>0)return'bullish EMA cross '+w;if(a>=0&&b<0)return'bearish EMA cross '+w}return'no EMA cross in range'}
+
 function render(cv,S,o){
  const W=cv.clientWidth,H=cv.clientHeight,d=devicePixelRatio||1;cv.width=W*d;cv.height=H*d;const g=cv.getContext('2d');g.setTransform(d,0,0,d,0,0);g.fillStyle='#0e1116';g.fillRect(0,0,W,H);
  const N=S.c.length,e=N-V.off,s=Math.max(0,e-V.n),pw=W-52,ph=H-(o.ax?18:8)-8,bw=pw/(e-s),x=i=>(i-s+.5)*bw,tx=$(cv.id+'x');g.font=FS+'px system-ui';cv._S=S;cv._dk=o.dk;
@@ -218,14 +309,28 @@ function render(cv,S,o){
  for(let i=s;i<e;i++){if(S.real&&!S.real[i])continue;g.fillStyle=g.strokeStyle=PAL[tcol(S,i)];g.beginPath();g.moveTo(x(i),y(S.h[i]));g.lineTo(x(i),y(S.l[i]));g.stroke();g.fillRect(x(i)-bw*.36,Math.min(y(S.o[i]),y(S.c[i])),Math.max(1,bw*.72),Math.max(1,Math.abs(y(S.o[i])-y(S.c[i]))))}
  if(V.cross)for(let i=Math.max(s,1);i<e;i++){const a=S.cF[i-1]-S.cS[i-1],b=S.cF[i]-S.cS[i],bu=a<=0&&b>0,be=a>=0&&b<0;if(!bu&&!be)continue;const xx=x(i),yy=bu?y(S.l[i])+12:y(S.h[i])-12;g.fillStyle=bu?PAL[0]:PAL[1];g.strokeStyle='#fff';g.beginPath();if(bu){g.moveTo(xx,yy-7);g.lineTo(xx-6,yy+5);g.lineTo(xx+6,yy+5)}else{g.moveTo(xx,yy+7);g.lineTo(xx-6,yy-5);g.lineTo(xx+6,yy-5)}g.closePath();g.fill();g.stroke()}
  if(o.K)for(const [q,t,c,dash] of o.K){g.setLineDash(dash?[2,3]:[6,4]);g.strokeStyle=c;g.beginPath();g.moveTo(0,y(q));g.lineTo(pw,y(q));g.stroke();g.fillStyle=c;g.textAlign='left';g.fillText(t,4,y(q)-3)}
- g.setLineDash([]);g.lineWidth=1.6;
- for(const dd of (DR[o.dk]||[])){g.strokeStyle=g.fillStyle='#f5f5f5';if(dd.k==='h'){g.beginPath();g.moveTo(0,y(dd.p));g.lineTo(pw,y(dd.p));g.stroke();g.textAlign='left';g.fillText(dd.p.toFixed(2),4,y(dd.p)+FS+1)}
-  else{const x1=x(gi(S,dd.a.t)),y1=y(dd.a.p),x2=x(gi(S,dd.b.t)),y2=y(dd.b.p);if(x2===x1)continue;const sl=(y2-y1)/(x2-x1);g.beginPath();g.moveTo(x1,y1);g.lineTo(pw+20,y1+sl*(pw+20-x1));g.stroke();g.beginPath();g.arc(x1,y1,3,0,7);g.arc(x2,y2,3,0,7);g.fill()}}
- if(pend&&pend.cv===cv){g.fillStyle='#ffd54f';g.beginPath();g.arc(x(gi(S,pend.a.t)),y(pend.a.p),5,0,7);g.fill()}
+ g.setLineDash([]);g.lineWidth=1.8;
+ for(const dd of (DR[o.dk]||[])){
+   g.strokeStyle=g.fillStyle='#e0e6ed';
+   if(dd.k==='h'){
+     g.beginPath();g.moveTo(0,y(dd.p));g.lineTo(pw,y(dd.p));g.stroke();
+     g.textAlign='left';g.fillText(dd.p.toFixed(2),4,y(dd.p)+FS+2);
+   }else{
+     const x1=x(gi(S,dd.a.t)),y1=y(dd.a.p),x2=x(gi(S,dd.b.t)),y2=y(dd.b.p);
+     if(x2===x1)continue;
+     const sl=(y2-y1)/(x2-x1);
+     g.beginPath();g.moveTo(x1,y1);g.lineTo(pw+30,y1+sl*(pw+30-x1));g.stroke();
+     g.beginPath();g.arc(x1,y1,4,0,7);g.arc(x2,y2,4,0,7);g.fill();
+   }
+ }
+ if(pend&&pend.cv===cv){
+   g.fillStyle='#ffd54f';g.beginPath();g.arc(x(gi(S,pend.a.t)),y(pend.a.p),6,0,7);g.fill();
+ }
  g.lineWidth=1;g.restore();g.fillStyle='#a0a9b8';g.textAlign='left';g.font=(FS-.5)+'px system-ui';g.fillText(o.lg,4,FS+1);
  const ti=cv._hi!=null?Math.min(cv._hi,N-1):N-1,tn=tname(S,ti),f2=q=>isNaN(q)?'-':q.toFixed(2);
  if(tx)tx.textContent=`${S.ts[ti]} ${S.real&&!S.real[ti]?'(no trade, price carried) ':''}O ${f2(S.o[ti])} H ${f2(S.h[ti])} L ${f2(S.l[ti])} C ${f2(S.c[ti])} | trend ${tn} | EMA ${f2(S.cF[ti])}/${f2(S.cS[ti])} | VWAP ${f2(S.vw[ti])} | last: ${lastX(S)}`;
  cv.setAttribute('aria-label',`${o.nm}. Trend ${tn}. ${lastX(S)}. Latest price ${f2(S.c[N-1])}.`)}
+
 function draw(){
  const p=P[A];if(!p||!$('cv'))return;const B=V.tf===5?p.b5:p.b2,up=p.d>0,r=p.sel[V.sel]||p.sel[0],K=[];const zs=$('zs');if(zs)zs.value=325-V.n;
  if(r)K.push([r.k,r.k+(up?'C':'P')+' strike','#4aa3ff',0],[up?r.k+r.ap:r.k-r.ap,r.k+(up?'C':'P')+' break-even','#ffa726',1]);
@@ -237,6 +342,7 @@ function draw(){
  if(ob===null){render(cv,{c:[],h:[],l:[]},{nm:'Option chart',empty:'Option bars unavailable: '+(p.oerr||'')});return}
  p.os=p.os||{};const key=r.sym+V.tf;if(!p.os[key])p.os[key]=optS(B,ob);
  render(cv,p.os[key],{dk:r.sym+'|o',nm:`${p.s} ${r.k}${up?' call':' put'} option premium chart`,lg:'option premium | same indicators',empty:'No option trades in this window (try 5m)'})}
+
 const EMPTY='<div class="empty"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 12v9M16 9v12M23 6v12" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="7" y="14" width="4" height="5" fill="currentColor"/><rect x="14" y="11" width="4" height="7" fill="currentColor"/><rect x="21" y="8" width="4" height="7" fill="currentColor"/></svg><p>Tap <b>Scan</b> to find the strongest 2m + 5m trend setups with liquid 0DTE contracts.</p></div>';
 $('card').innerHTML=EMPTY;
 $('bd').onclick=togCfg;
