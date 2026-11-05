@@ -111,7 +111,7 @@ async function chain(sym,side,spot){
  const e0=rows.map(r=>r.exp).sort()[0];rows=rows.filter(r=>r.exp===e0);
  const dn=+v('dmin'),dx=+v('dmax'),ms=+v('spr');
  return{e0,rows:rows.filter(r=>r.sp<=ms&&(r.d==null||(Math.abs(r.d)>=dn&&Math.abs(r.d)<=dx))).sort((a,b)=>a.sp-b.sp||(b.bs+b.as)-(a.bs+a.as)).slice(0,12)}}
-let P=[],A=0,V={},pend=null,lt=0,LS=0;
+let P=[],A=0,V={},pend=null,lt=0,LS=0,TL=false;
 const newV=()=>({n:80,off:0,tf:5,sel:0,cross:V.cross!==false,tool:V.tool||'pan'});V=newV();
 async function scan(){
  if(!v('key')||!v('sec')){if($('cfg').hidden)togCfg();msg('Enter your Alpaca key and secret first.');return}
@@ -142,10 +142,10 @@ function card(){
  const p=P[A];if(!p){$('card').innerHTML=EMPTY;return}const up=p.d>0;
  $('card').innerHTML=`<div class="h"><b>${p.s}</b><span class="${up?'g':'r'}">${up?'▲ CALLS (bullish)':'▼ PUTS (bearish)'}</span><span>${p.px.toFixed(2)} <span class="${p.chg>=0?'g':'r'}">${p.chg==null?'':(p.chg>=0?'+':'')+p.chg.toFixed(2)+'%'}</span></span></div>
  <div class="sub">2m and 5m agree | strength ${p.sc.toFixed(1)} | expiry ${p.e0}</div>
- <div class="tb" role="toolbar" aria-label="Drawing tools"><button class="s" data-t="pan">Pan</button><button class="s" data-t="h">H-line</button><button class="s" data-t="t">Trend</button><button class="s" data-t="e">Erase</button><button class="s" id="un">Undo</button><button class="s" id="cl">Clear</button></div>
- <div class="tb" role="toolbar" aria-label="Chart options"><button class="s" data-tf="5">5m</button><button class="s" data-tf="2">2m</button><button class="s" id="xo" aria-pressed="true">Crossover</button></div>
+ <div id="tl" hidden><div class="tb" role="toolbar" aria-label="Drawing tools"><button class="s" data-t="pan">Pan</button><button class="s" data-t="h">H-line</button><button class="s" data-t="t">Trend</button><button class="s" data-t="e">Erase</button><button class="s" id="un">Undo</button><button class="s" id="cl">Clear</button></div>
+ <div class="tb" role="toolbar" aria-label="Chart options"><button class="s" data-tf="5">5m</button><button class="s" data-tf="2">2m</button><button class="s" id="xo" aria-pressed="true">Crossover</button><button class="s" id="tg" aria-expanded="false">Tools</button></div>
  <div class="tb" role="group" aria-label="Zoom"><button class="s" id="zo" aria-label="Zoom out">−</button><input id="zs" type="range" min="25" max="300" aria-label="Zoom level, right is more zoomed in"><button class="s" id="zi" aria-label="Zoom in">+</button><button class="s" id="fit">Fit</button></div>
- <div class="sub" id="hint" role="status" aria-live="polite"></div>
+ <div class="sub" id="hint" role="status" aria-live="polite"></div></div>
  <canvas id="cv" tabindex="0" role="img"></canvas><div class="rd" id="cvx"></div>
  <div class="chips" role="group" aria-label="Choose option contract">`+p.sel.map((r,j)=>`<button class="s" data-j="${j}" aria-pressed="${j===0}"><b>${r.k}${up?'C':'P'}</b><span>ask ${r.ap.toFixed(2)} · ${r.sp.toFixed(0)}% spr</span></button>`).join('')+`</div>
  <div class="sub" id="ol"></div><canvas id="ov" tabindex="0" role="img"></canvas><div class="rd" id="ovx"></div>`;
@@ -153,10 +153,12 @@ function card(){
  document.querySelectorAll('[data-tf]').forEach(b=>{b.onclick=()=>{V.tf=+b.dataset.tf;V.off=0;$('cv')._hi=$('ov')._hi=null;sync();draw();loadOpt()}});
  document.querySelectorAll('[data-j]').forEach(b=>b.onclick=()=>{V.sel=+b.dataset.j;sync();$('ov')._hi=null;draw();loadOpt()});
  $('xo').onclick=()=>{V.cross=!V.cross;sync();draw()};
+ $('tg').onclick=()=>{TL=!TL;showTl();draw()};showTl();
  $('un').onclick=()=>{const L=DR[V.lk];if(L&&L.length){L.pop();store();draw()}};
  $('cl').onclick=()=>{const r=p.sel[V.sel];delete DR[p.s+'|s'];if(r)delete DR[r.sym+'|o'];pend=null;store();draw()};
  $('zi').onclick=()=>zoom(.75);$('zo').onclick=()=>zoom(1.33);$('fit').onclick=fit;$('zs').oninput=()=>{V.n=325-(+$('zs').value);draw()};
  ['cv','ov'].forEach(id=>wire($(id)));setTool(V.tool);sync();draw();loadOpt()}
+function showTl(){const t=$('tl'),g=$('tg');if(!t)return;t.hidden=!TL;g.classList.toggle('on',TL);g.setAttribute('aria-expanded',String(TL));if(!TL&&V.tool!=='pan')setTool('pan')}
 function sync(){document.querySelectorAll('[data-tf]').forEach(b=>{const on=+b.dataset.tf===V.tf;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
  document.querySelectorAll('[data-j]').forEach(b=>{const on=+b.dataset.j===V.sel;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
  const x=$('xo');if(x){x.classList.toggle('on',V.cross);x.setAttribute('aria-pressed',String(V.cross))}}
