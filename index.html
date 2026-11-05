@@ -32,9 +32,9 @@ input[type=checkbox]{width:28px;height:28px;min-height:0;accent-color:var(--ac)}
 .tb button{flex:1 1 auto;min-width:50px;padding:8px 8px;white-space:nowrap}.tb input[type=range]{flex:2 1 120px;min-width:100px;padding:0;accent-color:var(--ac);min-height:44px}
 .chips{display:flex;gap:10px;margin:12px 0 4px}.chips button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px;min-height:58px;background:var(--p);border-color:#3a4558;color:var(--t)}
 .chips b{font-size:1.15em}.chips span{font-size:.78em;opacity:.85;font-weight:500}
-canvas{width:100%;display:block;touch-action:pan-y;background:#0b0e13;border:1px solid var(--b);border-radius:14px}
+canvas{width:100%;display:block;touch-action:none;background:#0b0e13;border:1px solid var(--b);border-radius:14px;margin-bottom:12px}
 #cv{height:clamp(280px,46vh,460px);height:clamp(280px,46svh,460px)}#ov{height:clamp(190px,28vh,280px);height:clamp(190px,28svh,280px)}
-.rd{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}canvas{margin-bottom:12px}
+.rd{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 table{border-collapse:collapse;width:100%;font-size:.92em}th,td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--b);white-space:nowrap}th:first-child,td:first-child{text-align:left}th{color:var(--m);font-weight:500}caption{text-align:left}.tw{overflow-x:auto}
 details{margin-top:18px;background:var(--p);border:1px solid var(--b);border-radius:14px;padding:6px 12px 10px;color:var(--m)}summary{min-height:40px;display:flex;align-items:center;cursor:pointer;color:var(--t);font-weight:600}
 small{color:var(--m);display:block;margin-top:16px;font-size:.78em;line-height:1.5}
@@ -43,10 +43,8 @@ small{color:var(--m);display:block;margin-top:16px;font-size:.78em;line-height:1
 @media (prefers-reduced-motion:reduce){button:active{transform:none}}
 </style></head><body>
 <div class="bar"><div class="brand"><svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#161d27"/><path d="M9 12v9M16 9v12M23 6v12" stroke="#8b95a5" stroke-width="1.5"/><rect x="7" y="14" width="4" height="5" fill="#ef5350"/><rect x="14" y="11" width="4" height="7" fill="#26a69a"/><rect x="21" y="8" width="4" height="7" fill="#26a69a"/></svg><b>Morning Scanner</b><button id="inst" class="s" hidden>Install</button></div><nav id="tabs" role="tablist" aria-label="Top picks"></nav></div>
-<div id="msg" role="status" aria-live="polite">Add your Alpaca keys in Settings, then scan.</div>
 <div id="card"></div>
 <details><summary>All scanned symbols</summary><div class="tw"><table><caption class="sub">Every symbol scanned, with direction, trend strength and contracts passing the filters</caption><thead><tr><th>Sym</th><th>Dir</th><th>Strength</th><th>Contracts</th></tr></thead><tbody id="all"></tbody></table></div></details>
-<small>Direction = 10/21 EMA cloud up (or down), price beyond the slow EMA, price vs session VWAP, and slow EMA slope, on BOTH 2m and 5m. Each pick offers the 2 most liquid contracts on the matching side (calls for up, puts for down): they pass your delta and spread filters, have today's volume above the minimum, and are ranked by tightest spread. Stock and option charts use the same indicators: EMA cloud, session VWAP (yellow) and fast/slow EMA crossover triangles (up = bullish cross, down = bearish cross). Candles: green = cloud up and price above slow EMA, red = cloud down and price below it, gray = mixed (the trend is also stated in text under each chart). Drawing tools: tap to place; drag still pans. Keyboard: focus a chart, then arrows pan, + / - zoom, 0 fits, Home/End jump. Screening tool, not advice; 0DTE options carry high risk of loss and indicative-feed data is delayed.</small>
 <div id="dock"><button id="scan">Scan</button><button id="cfgb" class="s" aria-expanded="false" aria-controls="cfg">⚙ Settings</button></div>
 <div id="bd" hidden></div>
 <section id="cfg" hidden role="dialog" aria-modal="true" aria-label="Settings"><div class="grab"></div><h2>Settings</h2><div class="grid">
@@ -76,7 +74,7 @@ let DR={};try{DR=JSON.parse(localStorage.msd||'{}')}catch(e){}
 const PAL0=['#26a69a','#ef5350','#8b95a5'],PAL1=['#2f80ed','#ff9800','#9aa5b1'];let PAL=PAL0,FS=11;
 function prefs(){PAL=$('cb').checked?PAL1:PAL0;FS=$('big').checked?15:12;document.documentElement.style.setProperty('--g',PAL[0]);document.documentElement.style.setProperty('--r',PAL[1]);document.body.classList.toggle('big',$('big').checked)}prefs();
 const saveCfg=()=>{const C={};IDS.forEach(i=>C[i]=$(i).type==='checkbox'?$(i).checked:v(i));localStorage.msc=JSON.stringify(C)};
-const msg=t=>$('msg').textContent=t;
+const msg=t=>$('msg')&&($('msg').textContent=t);
 const togCfg=()=>{const h=$('cfg').hidden=!$('cfg').hidden;$('bd').hidden=h;$('cfgb').setAttribute('aria-expanded',String(!h))};
 $('cfgb').onclick=togCfg;$('cb').onchange=$('big').onchange=()=>{prefs();saveCfg();draw()};
 $('save').onclick=()=>{saveCfg();prefs();togCfg();scan()};$('scan').onclick=()=>{saveCfg();scan()};
@@ -111,16 +109,14 @@ async function chain(sym,side,spot){
  const e0=rows.map(r=>r.exp).sort()[0];rows=rows.filter(r=>r.exp===e0);
  const dn=+v('dmin'),dx=+v('dmax'),ms=+v('spr');
  return{e0,rows:rows.filter(r=>r.sp<=ms&&(r.d==null||(Math.abs(r.d)>=dn&&Math.abs(r.d)<=dx))).sort((a,b)=>a.sp-b.sp||(b.bs+b.as)-(a.bs+a.as)).slice(0,12)}}
-let P=[],A=0,V={},pend=null,lt=0,LS=0,TL=false;
+let P=[],A=0,V={},pend=null,lt=0,LS=0,TL=true;
 const newV=()=>({n:80,off:0,tf:5,sel:0,cross:V.cross!==false,tool:V.tool||'pan'});V=newV();
 async function scan(){
- if(!v('key')||!v('sec')){if($('cfg').hidden)togCfg();msg('Enter your Alpaca key and secret first.');return}
- const syms=v('list').toUpperCase().split(/[\s,]+/).filter(Boolean);$('scan').disabled=true;$('scan').textContent='Scanning…';msg('Fetching 2m and 5m bars for '+syms.length+' symbols...');
- let r5,r2;try{[r5,r2]=await Promise.all([fb(syms,'5Min',5),fb(syms,'2Min',3)])}catch(e){msg('Error: '+e.message);$('scan').disabled=false;$('scan').textContent='Scan';return}
+ if(!v('key')||!v('sec')){if($('cfg').hidden)togCfg();alert('Enter your Alpaca key and secret in Settings first.');return}
+ const syms=v('list').toUpperCase().split(/[\s,]+/).filter(Boolean);$('scan').disabled=true;$('scan').textContent='Scanning…'; let r5,r2;try{[r5,r2]=await Promise.all([fb(syms,'5Min',5),fb(syms,'2Min',3)])}catch(e){alert('Error: '+e.message);$('scan').disabled=false;$('scan').textContent='Scan';return}
  const R=[];for(const s of syms){if(!r5[s]||!r2[s])continue;const b5=prep(r5[s]),b2=prep(r2[s]);if(b5.c.length<40||b2.c.length<40)continue;const a=dirOf(b5),b=dirOf(b2);
   R.push({s,b5,b2,d:a.d&&a.d===b.d?a.d:0,sc:a.dist+b.dist,px:b5.c[b5.c.length-1],chg:chg(b5),last:b5.ts[b5.ts.length-1]})}
- const cand=R.filter(r=>r.d).sort((a,b)=>b.sc-a.sc).slice(0,8);msg(`${R.length} scanned, ${cand.length} with 2m+5m agreement. Checking option chains and volume...`);
- await Promise.all(cand.map(async r=>{r.sel=[];r.ob={};try{
+ const cand=R.filter(r=>r.d).sort((a,b)=>b.sc-a.sc).slice(0,8); await Promise.all(cand.map(async r=>{r.sel=[];r.ob={};try{
   const ch=await chain(r.s,r.d>0?'call':'put',r.px);r.e0=ch.e0;
   if(ch.rows.length){const ld=r.b5.d[r.b5.d.length-1];
    try{const bars=await obars(ch.rows.map(x=>x.sym),5);ch.rows.forEach(x=>{const bb=bars[x.sym]||[];r.ob[x.sym+'5']=bb;x.vol=bb.reduce((s,b)=>s+(etp(b.t).d===ld?b.v:0),0)});r.sel=ch.rows.filter(x=>x.vol>+v('vol')).slice(0,2)}
@@ -128,37 +124,50 @@ async function scan(){
  }catch(e){r.err=e.message}}));
  P=cand.filter(r=>r.sel.length).map(r=>({...r,rk:r.sc-r.sel.reduce((s,x)=>s+x.sp,0)/r.sel.length/5})).sort((a,b)=>b.rk-a.rk).slice(0,3);
  $('all').innerHTML=R.sort((a,b)=>b.sc-a.sc).map(r=>`<tr><td>${r.s}</td><td class="${r.d>0?'g':r.d<0?'r':''}">${r.d>0?'UP':r.d<0?'DOWN':'mixed'}</td><td>${r.sc.toFixed(1)}</td><td>${r.sel?(r.err?'error':r.sel.length+' ok'):'-'}</td></tr>`).join('');
- const er=cand.find(r=>r.err),nv=cand.find(r=>r.novol&&r.sel.length);
- msg((P.length?`Top ${P.length} picks. Last bar ${R.length?R[0].last:''} ET (if the market is closed, this is the last session).`:'No stock passed direction, chain and volume checks.'+(er?' Error: '+er.err:' Try lowering min volume or widening spread/delta.'))+(nv?' Warning: option volume unavailable ('+nv.novol+'), so the volume filter was not applied.':''));
  A=0;V=newV();tabs();card();$('scan').disabled=false;$('scan').textContent='Scan';LS=Date.now()}
 function tabs(){$('tabs').innerHTML=P.map((p,i)=>`<button role="tab" aria-selected="${i===A}" class="${i===A?'on':''}" data-i="${i}" aria-label="${p.s} ${p.d>0?'bullish, calls':'bearish, puts'}">${p.s} ${p.d>0?'▲':'▼'}</button>`).join('')}
 const pick=i=>{A=(i+P.length)%P.length;V=newV();pend=null;tabs();card();const b=$('tabs').querySelector('.on');if(b)b.focus()};
 $('tabs').onclick=e=>{const b=e.target.closest('button');if(b)pick(+b.dataset.i)};
 $('tabs').onkeydown=e=>{if(e.key==='ArrowRight')pick(A+1);else if(e.key==='ArrowLeft')pick(A-1)};
-const HINT={pan:'Pan tool: drag to pan, tap a bar to read its values, double-tap to fit.',h:'Line tool: tap the chart to place a horizontal line.',t:'Trend tool: tap two points to draw a trend line (it extends to the right).',e:'Erase tool: tap near a drawing to delete it.'};
+const HINT={pan:'Pan tool: drag to pan, tap a bar to inspect, double-tap to fit.',h:'Line tool: tap chart to place a horizontal price line.',t:'Trend tool: tap 2 points to draw an extended trend line.',e:'Erase tool: tap near a drawing to remove it.'};
 const hint=t=>{const h=$('hint');if(h)h.textContent=t};
 function setTool(t){V.tool=t;pend=null;document.querySelectorAll('[data-t]').forEach(b=>{const on=b.dataset.t===t;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});hint(HINT[t])}
 function card(){
  const p=P[A];if(!p){$('card').innerHTML=EMPTY;return}const up=p.d>0;
  $('card').innerHTML=`<div class="h"><b>${p.s}</b><span class="${up?'g':'r'}">${up?'▲ CALLS (bullish)':'▼ PUTS (bearish)'}</span><span>${p.px.toFixed(2)} <span class="${p.chg>=0?'g':'r'}">${p.chg==null?'':(p.chg>=0?'+':'')+p.chg.toFixed(2)+'%'}</span></span></div>
  <div class="sub">2m and 5m agree | strength ${p.sc.toFixed(1)} | expiry ${p.e0}</div>
- <div id="tl" hidden><div class="tb" role="toolbar" aria-label="Drawing tools"><button class="s" data-t="pan">Pan</button><button class="s" data-t="h">H-line</button><button class="s" data-t="t">Trend</button><button class="s" data-t="e">Erase</button><button class="s" id="un">Undo</button><button class="s" id="cl">Clear</button></div>
- <div class="tb" role="toolbar" aria-label="Chart options"><button class="s" data-tf="5">5m</button><button class="s" data-tf="2">2m</button><button class="s" id="xo" aria-pressed="true">Crossover</button><button class="s" id="tg" aria-expanded="false">Tools</button></div>
- <div class="tb" role="group" aria-label="Zoom"><button class="s" id="zo" aria-label="Zoom out">−</button><input id="zs" type="range" min="25" max="300" aria-label="Zoom level, right is more zoomed in"><button class="s" id="zi" aria-label="Zoom in">+</button><button class="s" id="fit">Fit</button></div>
- <div class="sub" id="hint" role="status" aria-live="polite"></div></div>
+ <div class="tb" role="toolbar" aria-label="Main controls">
+   <button class="s on" data-tf="5">5m</button><button class="s" data-tf="2">2m</button>
+   <button class="s" id="xo" aria-pressed="true">Crossover</button>
+   <button class="s" id="tg" aria-expanded="${TL}">Tools ${TL?'▲':'▼'}</button>
+ </div>
+ <div id="tl" ${TL?'':'hidden'}>
+   <div class="tb" role="toolbar" aria-label="Drawing tools">
+     <button class="s" data-t="pan">Pan</button><button class="s" data-t="h">H-line</button>
+     <button class="s" data-t="t">Trend</button><button class="s" data-t="e">Erase</button>
+     <button class="s" id="un">Undo</button><button class="s" id="cl">Clear</button>
+   </div>
+   <div class="tb" role="group" aria-label="Zoom controls">
+     <button class="s" id="zo" aria-label="Zoom out">−</button>
+     <input id="zs" type="range" min="25" max="300" aria-label="Zoom level">
+     <button class="s" id="zi" aria-label="Zoom in">+</button><button class="s" id="fit">Fit</button>
+   </div>
+   <div class="sub" id="hint" role="status" aria-live="polite"></div>
+ </div>
  <canvas id="cv" tabindex="0" role="img"></canvas><div class="rd" id="cvx"></div>
- <div class="chips" role="group" aria-label="Choose option contract">`+p.sel.map((r,j)=>`<button class="s" data-j="${j}" aria-pressed="${j===0}"><b>${r.k}${up?'C':'P'}</b><span>ask ${r.ap.toFixed(2)} · ${r.sp.toFixed(0)}% spr</span></button>`).join('')+`</div>
+ <div class="chips" role="group" aria-label="Option contracts">`+p.sel.map((r,j)=>`<button class="s" data-j="${j}" aria-pressed="${j===0}"><b>${r.k}${up?'C':'P'}</b><span>ask ${r.ap.toFixed(2)} · ${r.sp.toFixed(0)}% spr</span></button>`).join('')+`</div>
  <div class="sub" id="ol"></div><canvas id="ov" tabindex="0" role="img"></canvas><div class="rd" id="ovx"></div>`;
+ 
  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>setTool(b.dataset.t));
  document.querySelectorAll('[data-tf]').forEach(b=>{b.onclick=()=>{V.tf=+b.dataset.tf;V.off=0;$('cv')._hi=$('ov')._hi=null;sync();draw();loadOpt()}});
  document.querySelectorAll('[data-j]').forEach(b=>b.onclick=()=>{V.sel=+b.dataset.j;sync();$('ov')._hi=null;draw();loadOpt()});
  $('xo').onclick=()=>{V.cross=!V.cross;sync();draw()};
- $('tg').onclick=()=>{TL=!TL;showTl();draw()};showTl();
+ $('tg').onclick=()=>{TL=!TL;showTl()};
  $('un').onclick=()=>{const L=DR[V.lk];if(L&&L.length){L.pop();store();draw()}};
  $('cl').onclick=()=>{const r=p.sel[V.sel];delete DR[p.s+'|s'];if(r)delete DR[r.sym+'|o'];pend=null;store();draw()};
  $('zi').onclick=()=>zoom(.75);$('zo').onclick=()=>zoom(1.33);$('fit').onclick=fit;$('zs').oninput=()=>{V.n=325-(+$('zs').value);draw()};
  ['cv','ov'].forEach(id=>wire($(id)));setTool(V.tool);sync();draw();loadOpt()}
-function showTl(){const t=$('tl'),g=$('tg');if(!t)return;t.hidden=!TL;g.classList.toggle('on',TL);g.setAttribute('aria-expanded',String(TL));if(!TL&&V.tool!=='pan')setTool('pan')}
+function showTl(){const t=$('tl'),g=$('tg');if(!t)return;t.hidden=!TL;g.classList.toggle('on',TL);g.textContent=`Tools ${TL?'▲':'▼'}`;g.setAttribute('aria-expanded',String(TL));if(!TL&&V.tool!=='pan')setTool('pan')}
 function sync(){document.querySelectorAll('[data-tf]').forEach(b=>{const on=+b.dataset.tf===V.tf;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
  document.querySelectorAll('[data-j]').forEach(b=>{const on=+b.dataset.j===V.sel;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
  const x=$('xo');if(x){x.classList.toggle('on',V.cross);x.setAttribute('aria-pressed',String(V.cross))}}
@@ -196,10 +205,10 @@ const tname=(S,i)=>['UP','DOWN','MIXED'][tcol(S,i)];
 function lastX(S){for(let i=S.c.length-1;i>0;i--){const a=S.cF[i-1]-S.cS[i-1],b=S.cF[i]-S.cS[i],n=S.c.length-1-i,w=`${n} bars ago (${S.ts[i].slice(6)})`;if(a<=0&&b>0)return'bullish EMA cross '+w;if(a>=0&&b<0)return'bearish EMA cross '+w}return'no EMA cross in range'}
 function render(cv,S,o){
  const W=cv.clientWidth,H=cv.clientHeight,d=devicePixelRatio||1;cv.width=W*d;cv.height=H*d;const g=cv.getContext('2d');g.setTransform(d,0,0,d,0,0);g.fillStyle='#0e1116';g.fillRect(0,0,W,H);
- const N=S.c.length,e=N-V.off,s=Math.max(0,e-V.n),pw=W-52,ph=H-(o.ax?16:6)-6,bw=pw/(e-s),x=i=>(i-s+.5)*bw,tx=$(cv.id+'x');g.font=FS+'px system-ui';cv._S=S;cv._dk=o.dk;
+ const N=S.c.length,e=N-V.off,s=Math.max(0,e-V.n),pw=W-52,ph=H-(o.ax?18:8)-8,bw=pw/(e-s),x=i=>(i-s+.5)*bw,tx=$(cv.id+'x');g.font=FS+'px system-ui';cv._S=S;cv._dk=o.dk;
  let lo=1e9,hi=-1e9;for(let i=s;i<e;i++){if(S.real&&!S.real[i])continue;if(S.h[i]>hi)hi=S.h[i];if(S.l[i]<lo)lo=S.l[i]}
  if(lo>hi){cv._m=null;g.fillStyle='#a0a9b8';g.textAlign='center';g.fillText(o.empty||'No data',W/2,H/2);if(tx)tx.textContent=o.empty||'No data';cv.setAttribute('aria-label',o.nm+': '+(o.empty||'no data'));return}
- const pd=(hi-lo)*.1||.05;lo-=pd;hi+=pd;const y=q=>(1-(q-lo)/(hi-lo))*ph+3;cv._m={s,bw,lo,hi,ph,pw,y,x,N};
+ const pd=(hi-lo)*.15||.05;lo-=pd;hi+=pd;const y=q=>(1-(q-lo)/(hi-lo))*ph+4;cv._m={s,bw,lo,hi,ph,pw,y,x,N};
  g.fillStyle='#a0a9b8';g.strokeStyle='#1c222b';g.textAlign='left';
  for(let k=0;k<=3;k++){const q=lo+(hi-lo)*k/3;g.beginPath();g.moveTo(0,y(q));g.lineTo(pw,y(q));g.stroke();g.fillText(q.toFixed(2),pw+3,y(q)+4)}
  if(o.ax){g.textAlign='center';for(let k=0;k<3;k++){const i=Math.min(e-1,Math.round(s+(e-s-1)*k/2));g.fillText(S.ts[i].slice(6),Math.min(Math.max(x(i),26),pw-26),H-3)}}
@@ -236,7 +245,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&v('key')&
 let dip=null;const IOS=/iphone|ipad|ipod/i.test(navigator.userAgent),SA=navigator.standalone||matchMedia('(display-mode:standalone)').matches;
 if(IOS&&!SA)$('inst').hidden=false;
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();dip=e;$('inst').hidden=false});
-$('inst').onclick=async()=>{if(dip){dip.prompt();try{await dip.userChoice}catch(e){}dip=null;$('inst').hidden=true}else msg('To install: tap the Share button, then Add to Home Screen.')};
+$('inst').onclick=async()=>{if(dip){dip.prompt();try{await dip.userChoice}catch(e){}dip=null;$('inst').hidden=true}else alert('To install: tap the Share button, then Add to Home Screen.')};
 addEventListener('appinstalled',()=>{$('inst').hidden=true});
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 addEventListener('resize',draw);
